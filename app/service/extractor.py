@@ -1,6 +1,8 @@
 import re
 from datetime import datetime
 from app.schema.invoice import Invoice, Amounts
+from app.service.normalizer import parse_currency
+
 
 BLACKLIST_VENDOR = {"receipt", "recept", "invoice", "paid"}
 
@@ -49,10 +51,18 @@ def normalize_date(v: str | None) -> str | None:
 
 def normalize_invoice(llm_data: dict) -> Invoice:
     total = None
+    # if llm_data.get("payment_amount_candidates"):
+    #     total = llm_data["payment_amount_candidates"][0]
+    # elif llm_data.get("total_candidates"):
+    #     total = llm_data["total_candidates"][0]
     if llm_data.get("payment_amount_candidates"):
         total = llm_data["payment_amount_candidates"][0]
     elif llm_data.get("total_candidates"):
         total = llm_data["total_candidates"][0]
+    elif llm_data.get("subtotal_candidates"):
+        total = llm_data["subtotal_candidates"][0]
+
+
 
     vendor = None
     for v in llm_data.get("vendor_name_candidates", []):
@@ -70,7 +80,9 @@ def normalize_invoice(llm_data: dict) -> Invoice:
         ),
         currency="IDR",
         amounts=Amounts(
-            total=total,
-            admin_fee=_pick_first(llm_data.get("admin_fee_candidates", []))
+            total=parse_currency(total),
+            admin_fee=parse_currency(
+                _pick_first(llm_data.get("admin_fee_candidates", []))
+            )
         )
     )
