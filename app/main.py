@@ -6,7 +6,7 @@ from app.ocr.pdf import ocr_pdf
 from app.ocr.doc import ocr_doc
 
 from app.llm.qwen_cleaner import qwen_clean_text
-from app.llm.qwen_invoice import extract_invoice_semantic
+from app.llm.qwen_invoice import extract_invoice_semantic, extract_amounts
 from app.service.extractor import normalize_invoice
 
 app = FastAPI(title="Invoice OCR API (POC)")
@@ -31,7 +31,10 @@ async def ocr_invoice(file: UploadFile = File(...)):
 
         clean_text = qwen_clean_text(raw_text)
         llm_candidates = extract_invoice_semantic(clean_text)
-        invoice = normalize_invoice(llm_candidates)
+        # invoice = normalize_invoice(llm_candidates)
+        amounts = extract_amounts(clean_text)
+        invoice = normalize_invoice(clean_text, amounts)
+
 
         return {
             "invoice": invoice

@@ -42,3 +42,46 @@ Return JSON:
     resp = requests.post(OLLAMA_URL, json=payload, timeout=120)
     resp.raise_for_status()
     return json.loads(resp.json()["message"]["content"])
+
+
+def extract_amounts(text: str) -> dict:
+    payload = {
+        "model": MODEL,
+        "options": {
+            "temperature": 0,      # 🔒 PENTING
+            "top_p": 0.1
+        },
+        "messages": [
+            {
+                "role": "system",
+                "content": (
+                    "Extract monetary values ONLY.\n"
+                    "- DO NOT extract vendor\n"
+                    "- DO NOT extract invoice number\n"
+                    "- DO NOT extract date\n"
+                    "- Numbers only\n"
+                    "- Return JSON ONLY"
+                )
+            },
+            {
+                "role": "user",
+                "content": f"""
+TEXT:
+{text}
+
+Return JSON:
+{{
+  "total": null,
+  "admin_fee": null,
+  "down_payment": null,
+  "balance_due": null
+}}
+"""
+            }
+        ],
+        "stream": False
+    }
+
+    r = requests.post(OLLAMA_URL, json=payload, timeout=120)
+    r.raise_for_status()
+    return json.loads(r.json()["message"]["content"])
